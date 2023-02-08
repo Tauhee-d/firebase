@@ -16,6 +16,9 @@ app.use(express.urlencoded({extended:true}))
 const employeeRoutes = require("./routes/employeeRoutes");
 app.use("/api", employeeRoutes.routes);
 
+const addPatient = require("./routes/addPatientRoutes");
+app.use("/api", addPatient.routes);
+
 
 // app.post('/create',async(req,res)=> {
 //     try {

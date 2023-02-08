@@ -4,7 +4,8 @@ const User = require("../models/user");
 // const fireStore = firebase.firestore();
 
 
-const admin = require('firebase-admin')
+const admin = require('firebase-admin');
+const { firestore } = require("firebase-admin");
 
 const db= admin.firestore()
 
@@ -19,13 +20,19 @@ const addUser = async (req, res, next) => {
   try {
     console.log("Adding new user");
    
-    const id = req.body.id
+    // const id = req.body.id
+    // const data = req.body
     const data = {
-      id:req.body.id,
+      // id:req.body.id,
+      
       profile:req.body.profile,
       battery:req.body.battery,
       device:req.body.device,
       temperature:req.body.temperature,
+      createdAt:admin.firestore.Timestamp.now(),
+      updatedAt:admin.firestore.Timestamp.now()
+
+
     }
     //  await db.collection("user").doc().set(data);
      await db.collection("user").add(data);
@@ -35,21 +42,96 @@ const addUser = async (req, res, next) => {
   }
 };
 
+// getting all users in descending order
+
 const getAllUsers = async (req, res, next) => {
   try {
     console.log("Getting all users");
+    // const id = doc.id
     const usersRef =  db.collection("user");
-    const response = await usersRef.get();
+    // const response = await usersRef.get();
+    const response = await usersRef.orderBy('createdAt', 'desc').get()
+
     const responseArr = [];
     response.forEach(doc => {
-      responseArr.push(doc.data());
+      const userarr = new User(
+
+                    doc.id,
+                    doc.data().profile,
+                    doc.data().device,
+                    doc.data().battery,
+                    doc.data().temperature,
+                    doc.data().createdAt,
+                    doc.data().updatedAt
+      )
+      // responseArr.push(doc.data(),doc.id);
+      responseArr.push(userarr);
     })
+
     res.send(responseArr)
     
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
+// const getAllUsers = async (req, res, next) => {
+//   const patients = await db.collection('user')
+//   const data = await patients.get();
+//   const usersArr = []
+//   if(data.empty){
+//     res.status(404).send('no user found')
+
+//   }else {
+//     data.forEach(doc => {
+//       const user = new User (
+//         doc.id,
+//         doc.profile,
+//         doc.battery,
+//         doc.profile,
+//         doc.temperature,
+//         doc.createdAt,
+//         doc.updatedAt,
+
+//       )
+//       usersArr.push(patients)
+//     })
+//     res.send(usersArr)
+//   }
+// }
+
+// const getAllUsers = async (req, res, next) => {
+//   try {
+//       const users = await db.collection('user');
+//       const data = await users.get();
+//       const usersArray = [];
+//       if(data.empty) {
+//           res.status(404).send('No student record found');
+//       }else {
+//           data.forEach(doc => {
+//               const user = new User(
+//                 doc.id,
+//                 doc.profile,
+//                 doc.battery,
+//                 doc.profile,
+//                 doc.temperature,
+//                 doc.createdAt,
+//                 doc.updatedAt,
+//               );
+//               usersArray.push(user);
+//           });
+//           res.send(usersArray);
+//       }
+//   } catch (error) {
+//       res.status(400).send(error.message);
+//   }
+// }
+
+
+
+
+
+
 
 // const getUser = async (req, res, next) => {
 //   try {
@@ -66,18 +148,50 @@ const getAllUsers = async (req, res, next) => {
 //     res.status(400).json({ message: error.message });
 //   }
 // };
+
+
+// const getUser = async (req, res, next) => {
+//   try {
+//     const userRef = await db.collection("user").doc(req.params.id).get();
+//     // const response = await userRef.get();
+    
+//     res.send(userRef.data())
+//     console.log("Getting  user");
+    
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// };
+
+
+// get data by id  and update data 
+
 const getUser = async (req, res, next) => {
   try {
-    const userRef = await db.collection("user").doc(req.params.id).get();
-    // const response = await userRef.get();
-    
-    res.send(userRef.data())
-    console.log("Getting  user");
-    
+      const updateTime = admin.firestore.Timestamp.now()
+      const id = req.params.id;
+      const userRef = await db.collection('user').doc(id);
+       await userRef.update({updatedAt:updateTime})
+      const data = await userRef.get();
+      if(!data.exists) {
+          res.status(404).send('user with the given ID not found');
+          return;
+      }
+      else {
+        
+          res.send(data.data());
+      }
   } catch (error) {
-    res.status(400).json({ message: error.message });
+      res.status(400).send(error.message);
   }
-};
+}
+
+
+
+
+
+
+
 
 const updateUser = async (req, res, next) => {
   try {
